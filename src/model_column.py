@@ -101,14 +101,8 @@ class Column:
             self.has_angular_coordinate = True
             self.has_angular_dispersion = True
 
-        if self.dev_mode:
-            n_c_choice = st.sidebar.selectbox(
-                "Number of components (enables per-component configuration)",
-                ["Arbitrary"] + list(range(1, 11)),
-                key=r"N_c_choice")
-            self.N_c = -1 if n_c_choice == "Arbitrary" else int(n_c_choice)
-        else:
-            self.N_c = -1
+        self.N_c = st.sidebar.number_input(
+            "Number of components", key=r"N_c", min_value=1, step=1) if self.dev_mode else -1
 
         if self.has_axial_coordinate:
             with col2:
@@ -225,6 +219,39 @@ class Column:
                                     self.req_binding_per_comp.append(False)
                                     self.has_surfDiff_per_comp.append(False)
                                     self.has_mult_bnd_states_per_comp.append(False)
+
+                        # Per-component configuration in advanced mode
+                        if self.advanced_mode and self.N_c > 0:
+                            st.sidebar.write("Per-component configuration")
+                            self.req_binding_per_comp = []
+                            self.nonlimiting_filmDiff_per_comp = []
+                            self.has_surfDiff_per_comp = []
+                            self.has_mult_bnd_states_per_comp = []
+                            for comp_i in range(self.N_c):
+                                with st.sidebar.expander(f"Component {comp_i + 1}"):
+                                    self.req_binding_per_comp.append(
+                                        st.selectbox(f"Binding kinetics mode",
+                                                     ["Kinetic", "Rapid-equilibrium"],
+                                                     key=f"req_binding_comp_{comp_i}") == "Rapid-equilibrium"
+                                    )
+                                    self.nonlimiting_filmDiff_per_comp.append(
+                                        st.selectbox(f"Non-limiting film diffusion",
+                                                     ["No", "Yes"],
+                                                     key=f"nonlimiting_filmDiff_comp_{comp_i}") == "Yes"
+                                    )
+                                    if resolution == "1D":
+                                        self.has_surfDiff_per_comp.append(
+                                            st.selectbox(f"Surface diffusion",
+                                                         ["No", "Yes"],
+                                                         key=f"has_surfDiff_comp_{comp_i}") == "Yes"
+                                        )
+                                    else:
+                                        self.has_surfDiff_per_comp.append(False)
+                                    self.has_mult_bnd_states_per_comp.append(
+                                        st.selectbox(f"Multiple bound states",
+                                                     ["No", "Yes"],
+                                                     key=f"has_mult_bnd_states_comp_{comp_i}") == "Yes"
+                                    )
 
                 self.particle_models.append(
                     Particle(
